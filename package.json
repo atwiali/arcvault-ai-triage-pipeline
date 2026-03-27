@@ -1,0 +1,33 @@
+{
+  "name": "arcvault-ai-triage-pipeline",
+  "version": "1.0.0",
+  "description": "AI-powered intake and triage pipeline that classifies, enriches, routes, and escalates customer requests using LLM-driven workflows.",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "ai",
+    "triage",
+    "pipeline",
+    "llm",
+    "anthropic"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "groq-sdk": "^1.1.2",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.0",
+    "@types/uuid": "^10.0.0",
+    "pdf-parse": "^2.4.5",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

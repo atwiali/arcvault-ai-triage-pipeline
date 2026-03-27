@@ -1,0 +1,119 @@
+[
+  {
+    "id": "a5889682-4b8d-4a28-aff9-b6ad1468e22d",
+    "timestamp": "2026-03-27T14:18:05.349Z",
+    "source": "Email",
+    "rawMessage": "Hi, I tried logging in this morning and keep getting a 403 error. My account is arcvault.io/user/jsmith. This started after your update last Tuesday.",
+    "classification": {
+      "category": "Bug Report",
+      "priority": "Medium",
+      "confidenceScore": 95
+    },
+    "enrichment": {
+      "coreIssue": "Customer is experiencing a 403 error when trying to log in after a recent update",
+      "identifiers": [
+        "arcvault.io/user/jsmith",
+        "403 error"
+      ],
+      "urgencySignal": "Medium"
+    },
+    "routing": {
+      "destinationQueue": "Engineering",
+      "escalationFlag": false,
+      "escalationReason": null
+    },
+    "summary": "The customer is unable to log in to their account due to a 403 error, which started after the update last Tuesday. The customer's account URL is arcvault.io/user/jsmith. They need assistance in resolving this issue to regain access to their account."
+  },
+  {
+    "id": "e5af064b-04b0-4133-befc-783e1b12c121",
+    "timestamp": "2026-03-27T14:18:06.115Z",
+    "source": "Web Form",
+    "rawMessage": "We'd love to see a bulk export feature for our audit logs. We're a compliance-heavy org and this would save us hours every month.",
+    "classification": {
+      "category": "Feature Request",
+      "priority": "Low",
+      "confidenceScore": 95
+    },
+    "enrichment": {
+      "coreIssue": "The customer is requesting a bulk export feature for audit logs to improve efficiency.",
+      "identifiers": [],
+      "urgencySignal": "Low"
+    },
+    "routing": {
+      "destinationQueue": "Product",
+      "escalationFlag": false,
+      "escalationReason": null
+    },
+    "summary": "The customer is requesting a new feature to bulk export audit logs, citing the need to save time in their compliance-heavy organization. They believe this feature would save them hours every month. The customer is looking for an improvement to the existing functionality."
+  },
+  {
+    "id": "8dee1aa2-ecd8-40ef-aeb7-31ade7df6f2c",
+    "timestamp": "2026-03-27T14:18:06.756Z",
+    "source": "Support Portal",
+    "rawMessage": "Invoice #8821 shows a charge of $1,240 but our contract rate is $980/month. Can someone look into this?",
+    "classification": {
+      "category": "Billing Issue",
+      "priority": "Medium",
+      "confidenceScore": 95
+    },
+    "enrichment": {
+      "coreIssue": "Customer is disputing an invoice charge that exceeds their contract rate",
+      "identifiers": [
+        "Invoice #8821"
+      ],
+      "urgencySignal": "Medium"
+    },
+    "routing": {
+      "destinationQueue": "Escalation",
+      "escalationFlag": true,
+      "escalationReason": "Billing discrepancy exceeds $500"
+    },
+    "summary": "The customer is questioning an invoice charge of $1,240, which they believe should be $980 based on their contract rate. They are requesting an investigation into this discrepancy. The invoice in question is #8821."
+  },
+  {
+    "id": "6627ec87-580b-42ac-b0ff-c156e4247380",
+    "timestamp": "2026-03-27T14:18:07.420Z",
+    "source": "Email",
+    "rawMessage": "I'm not sure if this is the right place to ask, but is there a way to set up SSO with Okta? We're evaluating switching our auth provider.",
+    "classification": {
+      "category": "Technical Question",
+      "priority": "Low",
+      "confidenceScore": 90
+    },
+    "enrichment": {
+      "coreIssue": "The customer is inquiring about setting up Single Sign-On with Okta as their authentication provider.",
+      "identifiers": [
+        "Okta"
+      ],
+      "urgencySignal": "Low"
+    },
+    "routing": {
+      "destinationQueue": "IT/Security",
+      "escalationFlag": false,
+      "escalationReason": null
+    },
+    "summary": "The customer is evaluating a switch in their authentication provider and is seeking information on setting up Single Sign-On with Okta. They are unsure if this is the correct channel for their inquiry."
+  },
+  {
+    "id": "133cba43-8c79-4411-9102-157422a792f9",
+    "timestamp": "2026-03-27T14:18:08.339Z",
+    "source": "Web Form",
+    "rawMessage": "Your dashboard stopped loading for us around 2pm EST. Checked our end — it's definitely on yours. Multiple users affected.",
+    "classification": {
+      "category": "Incident/Outage",
+      "priority": "High",
+      "confidenceScore": 98
+    },
+    "enrichment": {
+      "coreIssue": "The customer's dashboard stopped loading for multiple users",
+      "identifiers": [],
+      "urgencySignal": "High"
+    },
+    "routing": {
+      "destinationQueue": "Escalation",
+      "escalationFlag": true,
+      "escalationReason": "Escalation keyword detected: \"multiple users affected\""
+    },
+    "summary": "The customer's dashboard stopped loading around 2pm EST, affecting multiple users, and they have confirmed the issue is not on their end. Immediate attention is required to resolve this outage."
+  }
+]
