@@ -12,6 +12,7 @@ import { extractEnrichment } from "./services/enricher";
 import { routeRequest } from "./services/router";
 import { checkEscalation } from "./services/escalation";
 import { writeTriageOutput, appendTriageOutput } from "./services/output";
+import { detectInjection } from "./services/promptGuard";
 import { sampleRequests } from "./data/sampleRequests";
 import { logger } from "./utils/logger";
 import { securityHeaders, corsMiddleware } from "./middleware/security";
@@ -35,6 +36,30 @@ app.use(sanitizeInput);
  */
 const processRequest = async (request: IngestRequest): Promise<TriageOutput> => {
   const { source, message } = request;
+
+  // Step 0: Prompt injection detection
+  const guard = detectInjection(message);
+  if (!guard.safe) {
+    logger.warn(`Blocked prompt injection attempt (score: ${guard.threatScore}) from ${source}`);
+    return {
+      id: uuidv4(),
+      timestamp: new Date().toISOString(),
+      source,
+      rawMessage: message,
+      classification: { category: "Bug Report", priority: "Medium", confidenceScore: 0 },
+      enrichment: {
+        coreIssue: "Message flagged by prompt injection detection — requires manual review",
+        identifiers: [],
+        urgencySignal: "Medium",
+      },
+      routing: {
+        destinationQueue: ESCALATION_QUEUE,
+        escalationFlag: true,
+        escalationReason: `Prompt injection detected (score: ${guard.threatScore}): ${guard.detections.join("; ")}`,
+      },
+      summary: "This message was flagged as a potential prompt injection attempt and has been escalated for manual review.",
+    };
+  }
 
   // Step 1: Classification + Enrichment (single LLM call)
   const llmResponse = await classifyAndEnrich(message, source);

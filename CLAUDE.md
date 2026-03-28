@@ -26,8 +26,9 @@ npm run test:coverage # Run tests with coverage report
 
 ## Architecture
 
-**Pipeline flow**: `POST request → classifyAndEnrich() → extractEnrichment() → routeRequest() → checkEscalation() → writeTriageOutput() → JSON response`
+**Pipeline flow**: `POST request → detectInjection() → classifyAndEnrich() → extractEnrichment() → routeRequest() → checkEscalation() → writeTriageOutput() → JSON response`
 
+- **Prompt injection guard** runs before any LLM call — blocks malicious inputs and auto-escalates
 - **Single LLM call** for classification + enrichment (reduces latency by ~50%)
 - **Routing & escalation are deterministic** — no LLM involvement, purely rule-based
 - **Fallback on LLM failure**: Returns confidenceScore=0 which auto-escalates to human review
@@ -35,7 +36,7 @@ npm run test:coverage # Run tests with coverage report
 ### Key Directories
 
 - `src/middleware/` — Security layers (auth, rate limiting, sanitization, helmet/CORS)
-- `src/services/` — Core pipeline logic (classifier, enricher, router, escalation, output)
+- `src/services/` — Core pipeline logic (classifier, enricher, router, escalation, output, promptGuard)
 - `src/prompts/` — LLM prompt templates
 - `src/config/` — Environment vars, constants, queue mappings
 - `src/types/` — All TypeScript interfaces
@@ -73,3 +74,4 @@ npm run test:coverage # Run tests with coverage report
 - Rate limit (ingest): 30 req / 1 min per IP
 - Max message length: 10,000 characters
 - Max request body: 100KB
+- Prompt injection threat threshold: score >= 3 blocks the message

@@ -18,6 +18,13 @@ AI-powered intake and triage pipeline that automatically classifies, enriches, r
                          └─────────┬───────────┘
                                    │
                     ┌──────────────▼──────────────┐
+                    │  Step 0: Prompt Injection     │
+                    │  Detection (pattern scoring)  │
+                    │  Blocks malicious inputs →    │
+                    │  auto-escalates to human      │
+                    └──────────────┬──────────────┘
+                                   │
+                    ┌──────────────▼──────────────┐
                     │  Step 1: Classification +    │
                     │  Enrichment (Groq API)       │
                     │  Single LLM call returns:    │
@@ -147,6 +154,7 @@ arcvault-ai-triage-pipeline/
 │   │   ├── sanitize.ts           # Input sanitization (HTML stripping, length limits)
 │   │   └── security.ts           # Helmet (HTTP headers) + CORS configuration
 │   ├── services/
+│   │   ├── promptGuard.ts        # Prompt injection detection (pattern scoring)
 │   │   ├── classifier.ts         # LLM classification + enrichment (single API call)
 │   │   ├── enricher.ts           # Extracts enrichment subset from LLM response
 │   │   ├── router.ts             # Deterministic routing (category → queue)
@@ -166,6 +174,7 @@ arcvault-ai-triage-pipeline/
 │   │   ├── escalation.test.ts    # Escalation rules tests
 │   │   ├── enricher.test.ts      # Enrichment extraction tests
 │   │   ├── classifier.test.ts    # LLM classifier tests (mocked)
+│   │   ├── promptGuard.test.ts   # Prompt injection detection tests
 │   │   └── security.test.ts      # Security middleware tests
 │   └── integration/
 │       └── api.test.ts           # Full API endpoint tests
@@ -200,7 +209,7 @@ arcvault-ai-triage-pipeline/
 
 ## Testing
 
-The project includes a comprehensive test suite using Vitest (46 tests across 6 files).
+The project includes a comprehensive test suite using Vitest (85 tests across 7 files).
 
 ```bash
 # Run all tests
@@ -214,8 +223,8 @@ npm run test:coverage
 ```
 
 **Test coverage:**
-- **Unit tests**: Router, escalation, enricher, classifier (with mocked Groq SDK)
-- **Integration tests**: Full API endpoint testing via supertest
+- **Unit tests**: Router, escalation, enricher, classifier (with mocked Groq SDK), prompt injection guard
+- **Integration tests**: Full API endpoint testing via supertest (including injection blocking)
 - **Security tests**: Input sanitization (XSS), message length limits, security headers, body size limits, authentication
 
 ## Security
@@ -230,6 +239,9 @@ The pipeline includes multiple security layers applied as Express middleware:
 | **API key auth** | Optional `x-api-key` header validation; set `API_KEY` in `.env` to enable |
 | **Input sanitization** | HTML tag stripping, 10,000 character message limit |
 | **Body size limit** | 100KB max request payload |
+| **Prompt injection guard** | Scores messages against 25+ threat patterns (role override, prompt leak, jailbreak, context confusion). Messages scoring >= 3 are blocked from the LLM and auto-escalated for human review |
+| **Hardened system prompt** | LLM instructions include explicit rules to never follow user-embedded instructions, never reveal the system prompt, and treat all customer messages as untrusted data |
+| **Message delimiters** | Customer messages are wrapped in `<customer_message>` tags with a reminder that the content is untrusted |
 
 ## What I'd Improve in Phase 2
 
