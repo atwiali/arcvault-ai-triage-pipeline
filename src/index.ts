@@ -12,7 +12,7 @@ import { extractEnrichment } from "./services/enricher";
 import { routeRequest } from "./services/router";
 import { checkEscalation } from "./services/escalation";
 import { writeTriageOutput, appendTriageOutput } from "./services/output";
-import { detectInjection } from "./services/promptGuard";
+import { detectInjection, sanitizePrompt } from "./services/promptGuard";
 import { sampleRequests } from "./data/sampleRequests";
 import { logger } from "./utils/logger";
 import { securityHeaders, corsMiddleware } from "./middleware/security";
@@ -61,8 +61,11 @@ const processRequest = async (request: IngestRequest): Promise<TriageOutput> => 
     };
   }
 
+  // Step 0.5: Sanitize surviving injection fragments before LLM call
+  const sanitizedMessage = sanitizePrompt(message);
+
   // Step 1: Classification + Enrichment (single LLM call)
-  const llmResponse = await classifyAndEnrich(message, source);
+  const llmResponse = await classifyAndEnrich(sanitizedMessage, source);
 
   const classification: ClassificationResult = {
     category: llmResponse.category,

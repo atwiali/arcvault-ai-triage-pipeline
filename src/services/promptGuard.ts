@@ -176,6 +176,64 @@ const THREAT_PATTERNS: ThreatPattern[] = [
 ];
 
 /**
+ * Patterns to strip from messages that pass detection.
+ * These neutralize subtle injection fragments without blocking the entire message.
+ */
+const SANITIZE_PATTERNS: RegExp[] = [
+  // Role override phrases
+  /ignore\s+(all\s+)?previous\s+instructions?/gi,
+  /disregard\s+(all\s+)?(above|previous)/gi,
+  /you\s+are\s+now/gi,
+  /act\s+as\s+(a|an|if)/gi,
+  /pretend\s+to\s+be/gi,
+  /switch\s+(to|into)\s+\w+\s+mode/gi,
+
+  // System prompt probing
+  /system\s+prompt/gi,
+  /developer\s+message/gi,
+  /override\s+instructions?/gi,
+
+  // Jailbreak keywords
+  /jailbreak/gi,
+  /bypass\s+(safety|security|filter)/gi,
+  /\bDAN\b/g,
+  /do\s+anything\s+now/gi,
+  /god\s+mode/gi,
+  /unrestricted\s+mode/gi,
+
+  // Fake role tags
+  /(?:^|\s)(?:system|assistant|user)\s*:/gi,
+
+  // Special token injections
+  /(?:end_turn|<\|im_end\|>|<\|im_start\|>|<\|endoftext\|>)/gi,
+
+  // Code-fenced system blocks
+  /```[\s\S]*?```/g,
+
+  // Fake delimiters
+  /---+\s*(?:end|begin|start)\s+(?:of\s+)?(?:system|user|assistant|prompt)/gi,
+  /<<\s*(?:system|instruction|prompt)\s*>>/gi,
+];
+
+/**
+ * Sanitizes a message by stripping injection patterns and normalizing whitespace.
+ * Runs on messages that pass detection to neutralize subtle fragments
+ * before sending to the LLM.
+ */
+export const sanitizePrompt = (message: string): string => {
+  let cleaned = message;
+
+  for (const pattern of SANITIZE_PATTERNS) {
+    cleaned = cleaned.replace(pattern, "");
+  }
+
+  // Normalize whitespace introduced by removals
+  cleaned = cleaned.replace(/\s{2,}/g, " ").trim();
+
+  return cleaned;
+};
+
+/**
  * Scans a message for prompt injection patterns.
  * Returns a result with safety status, threat score, and matched patterns.
  */
