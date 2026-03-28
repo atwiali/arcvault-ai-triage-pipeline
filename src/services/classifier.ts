@@ -84,13 +84,23 @@ export const classifyAndEnrich = async (
   source: string
 ): Promise<LLMTriageResponse> => {
   try {
-    const response = await client.chat.completions.create({
+
+const response = await client.chat.completions.create({
       model: MODEL,
       messages: [
+        // System prompt: sets the model's role and rules (the "training manual")
         { role: "system", content: TRIAGE_SYSTEM_PROMPT },
+        // User prompt: the actual customer message to classify
         { role: "user", content: buildTriagePrompt(message, source) },
       ],
+      // Creativity dial (0 = robotic, 1 = creative)
+      // 0.1 = near-zero randomness — same input always gives same classification
+      // Critical for triage: a 403 error must ALWAYS be "Bug Report", not sometimes "Technical Question"
       temperature: 0.1,
+
+      // Max response length in tokens (~1 token = ¾ of a word)
+      // Our JSON output is ~200 tokens, so 1024 gives safe headroom
+      // Prevents the model from rambling beyond the JSON and running up API costs
       max_tokens: 1024,
     });
 
