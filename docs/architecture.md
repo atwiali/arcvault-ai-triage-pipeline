@@ -92,7 +92,8 @@ Escalation rules are safety-critical. Using deterministic rules means:
 ### Reliability
 
 - **Graceful LLM failure**: If the Groq API call fails, the pipeline returns a fallback response with `confidenceScore: 0`, which auto-escalates to human review. No request is silently dropped.
-- **Input validation**: The Express endpoint validates request bodies before processing, returning 400 for malformed input.
+- **Input validation**: The Express endpoint validates request bodies before processing, returning 400 for malformed input. Input sanitization strips HTML to prevent XSS.
+- **Security middleware**: Helmet, CORS, rate limiting, and optional API key authentication protect all endpoints.
 - **File write isolation**: Output file write failures are caught and logged but don't crash the server or affect the HTTP response.
 
 ### Cost
@@ -109,7 +110,17 @@ Escalation rules are safety-critical. Using deterministic rules means:
 ### Rate Limiting
 
 - **API-side**: The Groq API has rate limits. The sequential processing in `/process-all` naturally stays under limits for small batches.
-- **Server-side**: In production, add Express rate limiting (express-rate-limit) on the ingest endpoint to prevent abuse.
+- **Server-side**: Express rate limiting is applied via `express-rate-limit` — 100 requests/15min globally and 30 requests/min on the ingest endpoint per IP.
+
+### Security Layers
+
+The pipeline applies multiple Express middleware for defense-in-depth:
+
+- **Helmet**: Sets secure HTTP response headers (X-Content-Type-Options, X-Frame-Options, etc.)
+- **CORS**: Restricts cross-origin requests; configurable via `ALLOWED_ORIGINS` environment variable.
+- **API key authentication**: Optional `x-api-key` header validation; enabled when `API_KEY` is set in `.env`.
+- **Input sanitization**: Strips HTML tags from all string inputs to prevent XSS. Enforces a 10,000-character message limit.
+- **Body size limit**: Express JSON parser limited to 100KB payloads.
 
 ### Retry Logic
 

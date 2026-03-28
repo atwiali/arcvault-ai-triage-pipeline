@@ -14,9 +14,20 @@ import { checkEscalation } from "./services/escalation";
 import { writeTriageOutput, appendTriageOutput } from "./services/output";
 import { sampleRequests } from "./data/sampleRequests";
 import { logger } from "./utils/logger";
+import { securityHeaders, corsMiddleware } from "./middleware/security";
+import { generalLimiter, ingestLimiter } from "./middleware/rateLimiter";
+import { authenticate } from "./middleware/auth";
+import { sanitizeInput } from "./middleware/sanitize";
 
 const app = express();
-app.use(express.json());
+
+// --- Security layers ---
+app.use(securityHeaders);
+app.use(corsMiddleware);
+app.use(express.json({ limit: "100kb" }));
+app.use(generalLimiter);
+app.use(authenticate);
+app.use(sanitizeInput);
 
 /**
  * Runs a single request through the full triage pipeline.
@@ -69,7 +80,7 @@ const processRequest = async (request: IngestRequest): Promise<TriageOutput> => 
  * Accepts a single customer request, runs it through the pipeline,
  * appends the result to the output file, and returns the structured result.
  */
-app.post("/webhook/ingest", async (req: Request, res: Response, next: NextFunction) => {
+app.post("/webhook/ingest", ingestLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { source, message } = req.body as Partial<IngestRequest>;
 
@@ -124,9 +135,13 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: "Internal server error" });
 });
 
-app.listen(PORT, () => {
-  logger.info(`ArcVault Triage Pipeline running on http://localhost:${PORT}`);
-  logger.info("Endpoints:");
-  logger.info("  POST /webhook/ingest   — Process a single request");
-  logger.info("  POST /process-all      — Process all sample requests");
-});
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, () => {
+    logger.info(`ArcVault Triage Pipeline running on http://localhost:${PORT}`);
+    logger.info("Endpoints:");
+    logger.info("  POST /webhook/ingest   — Process a single request");
+    logger.info("  POST /process-all      — Process all sample requests");
+  });
+}
+
+export { app };

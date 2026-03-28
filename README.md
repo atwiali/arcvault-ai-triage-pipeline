@@ -70,6 +70,8 @@ npm run dev
 
 ## API Endpoints
 
+All endpoints are protected by security middleware (rate limiting, input sanitization, security headers). If `API_KEY` is set in `.env`, requests must include an `x-api-key` header.
+
 ### `POST /webhook/ingest`
 
 Process a single customer request through the triage pipeline.
@@ -86,6 +88,7 @@ Process a single customer request through the triage pipeline.
 ```bash
 curl -X POST http://localhost:3000/webhook/ingest \
   -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
   -d '{"source": "Email", "message": "Hi, I keep getting a 403 error when logging in."}'
 ```
 
@@ -95,7 +98,8 @@ Run all 5 hardcoded sample requests through the pipeline for demo purposes.
 
 **Example:**
 ```bash
-curl -X POST http://localhost:3000/process-all
+curl -X POST http://localhost:3000/process-all \
+  -H "x-api-key: your-api-key"
 ```
 
 ## Sample Output
@@ -137,6 +141,11 @@ arcvault-ai-triage-pipeline/
 │   │   └── index.ts              # Environment variables, constants, queue mappings
 │   ├── data/
 │   │   └── sampleRequests.ts     # 5 synthetic test messages
+│   ├── middleware/
+│   │   ├── auth.ts               # API key authentication (x-api-key header)
+│   │   ├── rateLimiter.ts        # Rate limiting (general + ingest-specific)
+│   │   ├── sanitize.ts           # Input sanitization (HTML stripping, length limits)
+│   │   └── security.ts           # Helmet (HTTP headers) + CORS configuration
 │   ├── services/
 │   │   ├── classifier.ts         # LLM classification + enrichment (single API call)
 │   │   ├── enricher.ts           # Extracts enrichment subset from LLM response
@@ -149,6 +158,17 @@ arcvault-ai-triage-pipeline/
 │   │   └── index.ts              # TypeScript interfaces for all data shapes
 │   └── utils/
 │       └── logger.ts             # Logging utility with formatted triage output
+├── tests/
+│   ├── __mocks__/
+│   │   └── groqMock.ts           # Shared Groq SDK mock for all tests
+│   ├── unit/
+│   │   ├── router.test.ts        # Routing logic tests
+│   │   ├── escalation.test.ts    # Escalation rules tests
+│   │   ├── enricher.test.ts      # Enrichment extraction tests
+│   │   ├── classifier.test.ts    # LLM classifier tests (mocked)
+│   │   └── security.test.ts      # Security middleware tests
+│   └── integration/
+│       └── api.test.ts           # Full API endpoint tests
 ├── output/                       # Generated triage result JSON files
 ├── docs/
 │   ├── architecture.md           # System design, routing, escalation, scaling
@@ -156,6 +176,7 @@ arcvault-ai-triage-pipeline/
 ├── .env.example                  # Environment variable template
 ├── .gitignore
 ├── package.json
+├── vitest.config.ts              # Test framework configuration
 ├── tsconfig.json
 └── README.md
 ```
@@ -170,7 +191,45 @@ arcvault-ai-triage-pipeline/
 | **llama-3.3-70b-versatile** | LLM model | Strong structured output capability, good balance of speed and accuracy for classification tasks, free on Groq |
 | **uuid** | ID generation | Standard RFC 4122 UUIDs for unique triage record identification |
 | **dotenv** | Configuration | Keeps secrets out of code, standard .env pattern |
+| **helmet** | Security headers | Sets secure HTTP headers (XSS protection, content-type sniffing, frame options) |
+| **cors** | CORS control | Restricts cross-origin requests; configurable via `ALLOWED_ORIGINS` env var |
+| **express-rate-limit** | Rate limiting | Prevents abuse — 100 req/15min general, 30 req/min on ingest endpoint |
+| **vitest** | Testing | Fast TypeScript-native test runner with built-in mocking and coverage |
+| **supertest** | HTTP testing | Integration testing for Express endpoints without starting a server |
 | **tsx** | Dev runner | Fast TypeScript execution without a build step during development |
+
+## Testing
+
+The project includes a comprehensive test suite using Vitest (46 tests across 6 files).
+
+```bash
+# Run all tests
+npm test
+
+# Watch mode
+npm run test:watch
+
+# With coverage report
+npm run test:coverage
+```
+
+**Test coverage:**
+- **Unit tests**: Router, escalation, enricher, classifier (with mocked Groq SDK)
+- **Integration tests**: Full API endpoint testing via supertest
+- **Security tests**: Input sanitization (XSS), message length limits, security headers, body size limits, authentication
+
+## Security
+
+The pipeline includes multiple security layers applied as Express middleware:
+
+| Layer | Description |
+|-------|-------------|
+| **Helmet** | Secure HTTP headers (X-Content-Type-Options, X-Frame-Options, etc.) |
+| **CORS** | Cross-origin restriction; configure `ALLOWED_ORIGINS` in `.env` |
+| **Rate limiting** | General: 100 req/15min per IP. Ingest endpoint: 30 req/min per IP |
+| **API key auth** | Optional `x-api-key` header validation; set `API_KEY` in `.env` to enable |
+| **Input sanitization** | HTML tag stripping, 10,000 character message limit |
+| **Body size limit** | 100KB max request payload |
 
 ## What I'd Improve in Phase 2
 
@@ -180,6 +239,5 @@ arcvault-ai-triage-pipeline/
 - **Slack/Teams integration**: Push escalated tickets directly to the on-call channel with a one-click acknowledge action.
 - **Retry with backoff**: Add exponential retry logic for transient API failures instead of immediately falling back.
 - **Persistent storage**: Replace file-based output with a database (PostgreSQL) for querying, analytics, and audit trails.
-- **Rate limiting**: Add request throttling on the ingest endpoint to prevent abuse and manage API costs.
 - **Batch processing**: Support ingesting multiple messages in a single request for high-volume scenarios.
 - **Confidence calibration**: Track actual vs. predicted confidence scores to recalibrate the threshold over time.
